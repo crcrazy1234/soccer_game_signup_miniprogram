@@ -75,6 +75,7 @@ Page({
     sizeOptions: [5, 7, 8],
     countOptions: [2, 3],
     formatText: '8v8v8',
+    checkinEnabled: true,
     autoTeams: false,
     goalkeeper: false,
     teamsRule: '',
@@ -133,6 +134,7 @@ Page({
       capacity: String(f ? f.capacity : s.capacity),
       teamSize: f ? f.teamSize : 8,
       teamCount: f ? f.teamCount : 3,
+      checkinEnabled: f ? f.checkinEnabled !== false : s.checkinEnabled !== false,
       autoTeams: !!(f && f.autoTeams),
       goalkeeper: !!(f && f.goalkeeper),
       // 新比赛：优先球队默认标签，没设就沿用复制来的上一场；编辑已有比赛用它自己的
@@ -203,6 +205,7 @@ Page({
     const key = e.currentTarget.dataset.key
     this.setData({ [key]: e.detail.value })
     if (key === 'autoTeams' && !e.detail.value) this.setData({ goalkeeper: false })
+    if (key === 'checkinEnabled' && !e.detail.value) this.setData({ autoTeams: false, goalkeeper: false })
     if (key === 'scheduled') this.setData({ scheduledTouched: true })
   },
 
@@ -278,6 +281,7 @@ Page({
       capacity: String(t.capacity),
       teamSize: t.teamSize || 8,
       teamCount: t.teamCount || 3,
+      checkinEnabled: t.checkinEnabled !== false,
       autoTeams: !!t.autoTeams,
       goalkeeper: !!t.goalkeeper,
       tagsText: (t.tags || []).join('，'),
@@ -340,8 +344,9 @@ Page({
       capacity: Number(d.capacity),
       teamSize: d.teamSize,
       teamCount: d.teamCount,
-      autoTeams: d.autoTeams,
-      goalkeeper: d.autoTeams && d.goalkeeper,
+      checkinEnabled: d.checkinEnabled,
+      autoTeams: d.checkinEnabled && d.autoTeams,
+      goalkeeper: d.checkinEnabled && d.autoTeams && d.goalkeeper,
       tags: splitTags(d.tagsText),
       lateGraceMin: Number(d.lateGraceMin),
       fineCents: Math.round(Number(d.fineDollars) * 100),
@@ -373,8 +378,9 @@ Page({
       capacity: Number(d.capacity),
       teamSize: d.teamSize,
       teamCount: d.teamCount,
-      autoTeams: d.autoTeams,
-      goalkeeper: d.autoTeams && d.goalkeeper,
+      checkinEnabled: d.checkinEnabled,
+      autoTeams: d.checkinEnabled && d.autoTeams,
+      goalkeeper: d.checkinEnabled && d.autoTeams && d.goalkeeper,
       tags: splitTags(d.tagsText),
       lateGraceMin: Number(d.lateGraceMin),
       fineCents: Math.round(Number(d.fineDollars) * 100),

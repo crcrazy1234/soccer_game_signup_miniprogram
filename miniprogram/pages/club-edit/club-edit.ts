@@ -24,6 +24,7 @@ Page({
     fineDollars: '5',
     cancelDeadlineTime: '21:00',
     defaultTagsText: '',
+    checkinEnabled: true,
     tzLabels: TIMEZONES.map((t) => t.label),
     tzIndex: 0,
     numFields: NUM_FIELDS,
@@ -55,6 +56,7 @@ Page({
       fineDollars: String(s.fineCents / 100),
       cancelDeadlineTime: s.cancelDeadlineTime,
       defaultTagsText: (s.defaultTags || []).join('，'),
+      checkinEnabled: s.checkinEnabled !== false,
       tzLabels: TIMEZONES.map((t) => t.label),
       tzIndex,
       nums,
@@ -86,6 +88,10 @@ Page({
     this.setData({ [e.currentTarget.dataset.key]: e.detail.value })
   },
 
+  onSwitch(e: WechatMiniprogram.SwitchChange) {
+    this.setData({ [e.currentTarget.dataset.key]: e.detail.value })
+  },
+
   onPick(e: WechatMiniprogram.PickerChange) {
     const key = e.currentTarget.dataset.key as string
     this.setData({ [key]: key === 'tzIndex' ? Number(e.detail.value) : e.detail.value })
@@ -106,6 +112,7 @@ Page({
       fineCents: Math.round(Number(d.fineDollars) * 100),
       cancelDeadlineTime: d.cancelDeadlineTime,
       defaultTags: d.defaultTagsText,
+      checkinEnabled: d.checkinEnabled,
     }
     for (const { key } of NUM_FIELDS) settings[key] = Number(d.nums[key])
     const ok = await run('updateClub', { clubId: d.clubId, name: d.name, venmo: d.venmo, settings }, '保存中')

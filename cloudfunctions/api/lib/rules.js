@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   cancelDeadlineDaysBefore: 1,
   cancelDeadlineTime: '21:00',
   defaultTags: [], // 新发起比赛时默认带上的标签
+  checkinEnabled: true, // 新发起比赛默认开启到场签到
 }
 
 // 比赛自选标签：管理员定义（如“已付款”），队员自己打上或取消

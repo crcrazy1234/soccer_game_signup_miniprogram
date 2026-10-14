@@ -46,6 +46,7 @@ function intIn(v, lo, hi, what) {
 function buildGameFields(club, venue, f) {
   const s = club.settings
   const tz = f.timezone || s.timezone
+  const checkinOn = f.checkinEnabled !== undefined ? !!f.checkinEnabled : s.checkinEnabled !== false
   if (!T.isValidTimeZone(tz)) throw new UserError('时区无效')
   const startAt = T.zonedToUtcMs(f.date, f.time, tz)
   const durationMin = intIn(f.durationMin ?? s.durationMin, 15, 600, '时长')
@@ -72,8 +73,10 @@ function buildGameFields(club, venue, f) {
     // 赛制与分队（默认 8v8v8，分队/守门员默认关闭）
     teamSize: intIn(f.teamSize ?? 8, 2, 20, '每队人数'),
     teamCount: intIn(f.teamCount ?? 3, 2, 6, '队数'),
-    autoTeams: !!f.autoTeams,
-    goalkeeper: !!f.autoTeams && !!f.goalkeeper,
+    // 关闭签到：不判定迟到/未到，也不能自动分队（分队按签到的人分）
+    checkinEnabled: checkinOn,
+    autoTeams: checkinOn && !!f.autoTeams,
+    goalkeeper: checkinOn && !!f.autoTeams && !!f.goalkeeper,
     tags: tagsOrThrow(f.tags),
     fineCents: intIn(f.fineCents ?? s.fineCents, 0, 100000, '罚款金额'),
     cancelDeadlineAt,
@@ -179,6 +182,7 @@ async function gameForm({ openid, clubId, gameId, copyLast }) {
     capacity: src.capacity,
     teamSize: src.teamSize || 8,
     teamCount: src.teamCount || 3,
+    checkinEnabled: src.checkinEnabled !== false,
     autoTeams: !!src.autoTeams,
     goalkeeper: !!src.goalkeeper,
     tags: src.tags || [],
@@ -615,6 +619,7 @@ async function subscribeChange({ openid, gameId, envVersion }) {
 
 async function checkin({ openid, gameId, lat, lng, accuracy, code }) {
   const game = await mustGet('games', gameId, '比赛')
+  if (game.checkinEnabled === false) throw new UserError('本场比赛没有开启签到')
   if (game.status !== 'active') throw new UserError('比赛已取消')
   const reg = await getDoc('registrations', regId(gameId, openid))
   if (!reg || reg.status !== 'registered') throw new UserError('你不在报名名单里')
@@ -672,6 +677,7 @@ async function checkin({ openid, gameId, lat, lng, accuracy, code }) {
 
 async function getCheckinCode({ openid, gameId }) {
   const game = await mustGet('games', gameId, '比赛')
+  if (game.checkinEnabled === false) throw new UserError('本场比赛没有开启签到')
   await requireAdmin(game.clubId, openid)
   const now = Date.now()
   return {
@@ -683,6 +689,7 @@ async function getCheckinCode({ openid, gameId }) {
 // 管理员修正出勤。结算前只能“代签到”；结算后可改成准时/迟到/未到，罚款随之调整
 async function setAttendance({ openid, gameId, target, attendance }) {
   const game = await mustGet('games', gameId, '比赛')
+  if (game.checkinEnabled === false) throw new UserError('本场比赛没有开启签到')
   await requireAdmin(game.clubId, openid)
   if (!['on_time', 'late', 'no_show'].includes(attendance)) throw new UserError('出勤状态无效')
   const reg = await getDoc('registrations', regId(gameId, target))

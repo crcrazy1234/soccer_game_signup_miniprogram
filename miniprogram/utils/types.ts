@@ -22,6 +22,7 @@ export interface ClubSettings {
   cancelDeadlineDaysBefore: number
   cancelDeadlineTime: string
   defaultTags?: string[]
+  checkinEnabled?: boolean
 }
 
 export interface Game {
@@ -48,6 +49,7 @@ export interface Game {
   status: 'active' | 'cancelled'
   teamSize: number
   teamCount: number
+  checkinEnabled?: boolean
   autoTeams: boolean
   goalkeeper: boolean
   tags?: string[]
@@ -151,6 +153,7 @@ export interface GameForm {
   capacity: number
   teamSize: number
   teamCount: number
+  checkinEnabled: boolean
   autoTeams: boolean
   goalkeeper: boolean
   tags: string[]
@@ -222,6 +225,7 @@ export interface GameTemplate {
   capacity: number
   teamSize?: number
   teamCount?: number
+  checkinEnabled?: boolean
   autoTeams?: boolean
   goalkeeper?: boolean
   tags?: string[]

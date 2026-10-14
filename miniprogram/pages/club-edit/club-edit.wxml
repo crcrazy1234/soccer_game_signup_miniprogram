@@ -29,6 +29,11 @@
       <view class="field"><text class="field-label">缺席不转发罚款截止时刻</text><text class="field-value">{{cancelDeadlineTime}} ›</text></view>
     </picker>
     <view class="field">
+      <text class="field-label">默认开启到场签到</text>
+      <switch checked="{{checkinEnabled}}" data-key="checkinEnabled" bindchange="onSwitch" color="#111" />
+    </view>
+    <view class="hint">关掉后新发起的比赛默认不需要签到、不判迟到；单场发起时仍可打开</view>
+    <view class="field">
       <text class="field-label">默认标签</text>
       <input class="field-value" value="{{defaultTagsText}}" data-key="defaultTagsText" bindinput="onInput" placeholder="如：已付款" maxlength="30" />
     </view>

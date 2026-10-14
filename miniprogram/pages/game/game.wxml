@@ -12,7 +12,7 @@
     <view class="sub small" wx:if="{{d.game.venue.address}}">{{d.game.venue.address}}</view>
     <view class="sub">⚽ {{formatStr}}</view>
     <view class="sub small mt">
-      {{d.club.name}} · 开赛 {{d.game.lateGraceMin}} 分钟后未签到记迟到，罚 {{fineText}}
+      {{d.club.name}}<text wx:if="{{d.game.checkinEnabled !== false}}"> · 开赛 {{d.game.lateGraceMin}} 分钟后未签到记迟到，罚 {{fineText}}</text>
     </view>
     <view class="sub small">缺席不转发罚款截止：{{d.game.local.cancelDeadline}}</view>
     <view wx:if="{{d.game.note}}" class="mt" style="white-space: pre-wrap;">{{d.game.note}}</view>
@@ -64,7 +64,7 @@
   </view>
 
   <!-- 签到 -->
-  <view wx:if="{{myStatus === 'registered' && d.game.status === 'active'}}" class="card">
+  <view wx:if="{{myStatus === 'registered' && d.game.status === 'active' && d.game.checkinEnabled !== false}}" class="card">
     <view wx:if="{{d.me.reg.checkinAt}}" class="row-between">
       <text class="ok bold">✓ 已签到 {{myCheckinText}}</text>
       <text wx:if="{{d.me.reg.checkinAt >= d.game.lateAt}}" class="tag tag-bad">迟到</text>
@@ -104,7 +104,7 @@
     <view class="row-between">
       <text class="bold">管理员</text>
       <view class="row">
-        <text class="btn btn-ghost btn-sm" bindtap="toggleCode">签到码</text>
+        <text wx:if="{{d.game.checkinEnabled !== false}}" class="btn btn-ghost btn-sm" bindtap="toggleCode">签到码</text>
         <text class="btn btn-ghost btn-sm" style="margin-left:12rpx;" bindtap="onEditTags">标签</text>
         <text wx:if="{{!settled}}" class="btn btn-ghost btn-sm" style="margin-left:12rpx;" bindtap="onEdit">编辑</text>
         <text wx:if="{{!settled}}" class="btn btn-danger btn-sm" style="margin-left:12rpx;" bindtap="onCancelGame">取消比赛</text>

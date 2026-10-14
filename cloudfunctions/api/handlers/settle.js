@@ -37,9 +37,11 @@ async function settleGame(game) {
       .update({ data: { settledAt: now } })
   }
 
-  const regs = await listAll(
-    db.collection('registrations').where({ gameId: game._id, status: 'registered', attendance: '' }),
-  )
+  // 没开签到的比赛：不判定出勤、不罚款
+  const regs =
+    game.checkinEnabled === false
+      ? []
+      : await listAll(db.collection('registrations').where({ gameId: game._id, status: 'registered', attendance: '' }))
   for (const reg of regs) {
     const attendance = rules.attendanceFor(reg.checkinAt, game)
     // 先生成罚款再记出勤：中途被打断时，这个人下次还会被处理（罚款按 ID 去重）

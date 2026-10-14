@@ -288,3 +288,41 @@ test('settlement resumes after an interrupted run', async () => {
   const r2 = await main({ Type: 'Timer', TriggerName: 'settle' })
   assert.strictEqual(r2.settled, 0)
 })
+
+test('check-in can be turned off per game or by club default', async () => {
+  fake.reset()
+  const startAt = T.zonedToUtcMs('2026-10-04', '10:00', tz)
+  fake.setNow(startAt - 2 * 24 * 60 * MIN)
+  for (const id of ['o', 'a']) {
+    await api(id, 'login')
+    await api(id, 'updateProfile', { nickname: id.toUpperCase() })
+  }
+  const { clubId } = await api('o', 'createClub', { name: 'T' })
+  const { venueId } = await api('o', 'saveVenue', { clubId, venue: { name: 'V', ...VENUE } })
+  const form = { date: '2026-10-04', time: '10:00', timezone: tz, venueId }
+
+  // 单场关闭：自动分队也被关掉
+  const { gameId } = await api('o', 'saveGame', { clubId, form: { ...form, checkinEnabled: false, autoTeams: true, goalkeeper: true } })
+  let g = (await api('o', 'getGame', { gameId })).game
+  assert.deepStrictEqual([g.checkinEnabled, g.autoTeams, g.goalkeeper], [false, false, false])
+  await api('a', 'signup', { gameId, inviter: 'o' })
+  fake.setNow(startAt - 10 * MIN)
+  assert.match(await apiErr('a', 'checkin', { gameId, ...VENUE }), /没有开启签到/)
+  assert.match(await apiErr('o', 'getCheckinCode', { gameId }), /没有开启签到/)
+  // 结算：不判未到、不罚款
+  fake.setNow(startAt + 30 * MIN)
+  const d = await api('o', 'getGame', { gameId })
+  assert.strictEqual(d.registered[0].attendance, '')
+  assert.strictEqual([...fake.store.fines.values()].filter((f) => f.gameId === gameId).length, 0)
+
+  // 球队默认关闭 → 新比赛默认关闭；单场可再打开
+  await api('o', 'updateClub', { clubId, settings: { checkinEnabled: false } })
+  fake.setNow(startAt - 2 * 24 * 60 * MIN)
+  const { gameId: g2 } = await api('o', 'saveGame', { clubId, form: { ...form, date: '2026-10-11' } })
+  assert.strictEqual((await api('o', 'getGame', { gameId: g2 })).game.checkinEnabled, false)
+  const { gameId: g3 } = await api('o', 'saveGame', { clubId, form: { ...form, date: '2026-10-18', checkinEnabled: true } })
+  assert.strictEqual((await api('o', 'getGame', { gameId: g3 })).game.checkinEnabled, true)
+  // 旧比赛（没有这个字段）视为开启
+  delete fake.store.games.get(g3).checkinEnabled
+  assert.strictEqual((await api('o', 'gameForm', { clubId, gameId: g3 })).form.checkinEnabled, true)
+})

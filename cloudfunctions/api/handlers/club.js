@@ -41,6 +41,7 @@ function cleanSettings(input = {}) {
     if (!/^\d{2}:\d{2}$/.test(input.cancelDeadlineTime)) throw new UserError('截止时间格式应为 HH:mm')
     s.cancelDeadlineTime = input.cancelDeadlineTime
   }
+  if (input.checkinEnabled !== undefined) s.checkinEnabled = !!input.checkinEnabled
   if (input.defaultTags !== undefined) {
     try {
       s.defaultTags = cleanTags(input.defaultTags)
@@ -230,8 +231,9 @@ function cleanTemplate(t) {
     capacity: int(t.capacity, 1, 100, '人数上限'),
     teamSize: int(t.teamSize ?? 8, 2, 20, '每队人数'),
     teamCount: int(t.teamCount ?? 3, 2, 6, '队数'),
-    autoTeams: !!t.autoTeams,
-    goalkeeper: !!t.autoTeams && !!t.goalkeeper,
+    checkinEnabled: t.checkinEnabled !== false,
+    autoTeams: t.checkinEnabled !== false && !!t.autoTeams,
+    goalkeeper: t.checkinEnabled !== false && !!t.autoTeams && !!t.goalkeeper,
     tags: (() => {
       try {
         return cleanTags(t.tags)

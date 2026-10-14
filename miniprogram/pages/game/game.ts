@@ -664,7 +664,7 @@ Page({
     }
     const setAtt = (attendance: string) => () =>
       run('setAttendance', { gameId: this.data.id, target: openid, attendance }, '处理中')
-    if (status === 'registered') {
+    if (status === 'registered' && d.game.checkinEnabled !== false) {
       if (this.data.settled) {
         items.push({
           label: '修正出勤…',
