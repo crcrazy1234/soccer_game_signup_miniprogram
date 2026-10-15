@@ -323,6 +323,7 @@ async function getGame({ openid, gameId }) {
       cancelPhase: r.cancelPhase || '',
       cancelledFrom: r.cancelledFrom || '',
       tags: (r.tags || []).filter((t) => (game.tags || []).includes(t)),
+      note: r.note || '',
       checkinAt: r.checkinAt || 0,
       checkinMethod: r.checkinMethod || '',
       attendance: r.attendance || '',
@@ -439,6 +440,7 @@ async function signup({ openid, gameId, inviter, subscribed, subscribedChange, e
         gk: 0,
         teamInitial: false,
         tags: [],
+        note: '',
         subscribed: status === 'waitlist' && !!subscribed,
         subscribedChange: !!subscribedChange,
         mpState: mpState(envVersion),
@@ -790,8 +792,39 @@ async function setGameTags({ openid, gameId, tags }) {
   return { tags: next }
 }
 
+// 报名备注：队员自己写一句（如“6:20 到”），所有人可见；管理员可以改或清空别人的。
+// 用户发布、他人可见的文字，保存前做微信内容安全检测。
+const NOTE_MAX = 20
+
+async function checkText(openid, content) {
+  try {
+    const r = await cloud.openapi.security.msgSecCheck({ openid, scene: 1, version: 2, content })
+    const suggest = r && r.result && r.result.suggest
+    if (suggest && suggest !== 'pass') throw new UserError('备注包含不合适的内容，请修改')
+  } catch (e) {
+    if (e instanceof UserError) throw e
+    if (e && e.errCode === 87014) throw new UserError('备注包含不合适的内容，请修改')
+    // 检测服务本身出错（如权限未配置）：记日志后放行，不影响正常使用
+    console.error('msgSecCheck failed', e && (e.errCode || e.errMsg || e.message))
+  }
+}
+
+async function setRegNote({ openid, gameId, note, target }) {
+  const game = await mustGet('games', gameId, '比赛')
+  const who = target || openid
+  if (who !== openid) await requireAdmin(game.clubId, openid)
+  const reg = await getDoc('registrations', regId(gameId, who))
+  if (!reg || (reg.status !== 'registered' && reg.status !== 'waitlist')) throw new UserError('只有报名或替补的人可以写备注')
+  const text = String(note || '').replace(/\s+/g, ' ').trim()
+  if (text.length > NOTE_MAX) throw new UserError(`备注最多 ${NOTE_MAX} 个字`)
+  if (text) await checkText(openid, text)
+  await db.collection('registrations').doc(reg._id).update({ data: { note: text } })
+  return { note: text }
+}
+
 module.exports = {
   archiveGame,
+  setRegNote,
   buildGameFields,
   toggleTag,
   setGameTags,

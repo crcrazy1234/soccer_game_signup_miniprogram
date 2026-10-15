@@ -52,15 +52,22 @@
     <view class="small mt">付清前无法报名。请{{d.club.venmo ? 'Venmo ' + d.club.venmo + ' 或' : ''}}现金支付给管理员，管理员确认后即可报名。</view>
   </view>
 
-  <!-- 我的标签 -->
-  <view wx:if="{{myTags.length}}" class="card">
-    <view class="row-between">
-      <text class="bold">我的标签</text>
-      <text class="sub small">点一下打上，再点取消</text>
+  <!-- 我的报名：备注 + 标签 -->
+  <view wx:if="{{(myStatus === 'registered' || myStatus === 'waitlist') && d.game.status === 'active'}}" class="card">
+    <view class="row-between" bindtap="onEditMyNote">
+      <text wx:if="{{myNote}}">📝 {{myNote}}</text>
+      <text wx:else class="link">＋ 添加备注（如：6:20 到）</text>
+      <text class="sub small">{{myNote ? '修改' : ''}}</text>
     </view>
-    <view class="row mt" style="flex-wrap:wrap;">
-      <text wx:for="{{myTags}}" wx:key="tag" class="chip {{item.on ? 'on' : ''}}" style="margin:0 16rpx 8rpx 0;" data-tag="{{item.tag}}" bindtap="onToggleMyTag">{{item.on ? '✓ ' : ''}}{{item.tag}}</text>
-    </view>
+    <block wx:if="{{myTags.length}}">
+      <view class="row-between mt">
+        <text class="bold small">我的标签</text>
+        <text class="sub small">点一下打上，再点取消</text>
+      </view>
+      <view class="row mt" style="flex-wrap:wrap;">
+        <text wx:for="{{myTags}}" wx:key="tag" class="chip {{item.on ? 'on' : ''}}" style="margin:0 16rpx 8rpx 0;" data-tag="{{item.tag}}" bindtap="onToggleMyTag">{{item.on ? '✓ ' : ''}}{{item.tag}}</text>
+      </view>
+    </block>
   </view>
 
   <!-- 签到 -->
@@ -115,7 +122,7 @@
       <view class="sub small">每分钟更新 · {{code.refreshText}}</view>
     </view>
     <view wx:if="{{notifyText}}" class="sub small mt">{{notifyText}}</view>
-    <view class="hint">点名单里的人可以：代签到、修正出勤、改标签、豁免或确认罚款、修改名字；「缺席」里截止后才取消的人可以罚“缺席未转发”</view>
+    <view class="hint">点名单里的人可以：代签到、修正出勤、改标签、改备注、处理罚款、修改名字；「缺席」里截止后才取消的人可以罚“缺席未转发”</view>
   </view>
 
   <!-- 名单 -->
@@ -148,6 +155,7 @@
           <view class="sub small">
             {{item.timeText}}<text wx:if="{{item.inviterName}}"> · 来自 {{item.inviterName}} 的邀请</text>
           </view>
+          <view wx:if="{{item.note}}" class="small" style="color:#555;">📝 {{item.note}}</view>
         </view>
       </view>
     </block>

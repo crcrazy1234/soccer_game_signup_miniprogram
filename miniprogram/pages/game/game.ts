@@ -143,6 +143,7 @@ Page({
     teamSizesText: '',
     tagStats: '', // 如“已付款 18/24”
     myTags: [] as { tag: string; on: boolean }[],
+    myNote: '',
     // 取消后的转发提示
     shareDialog: { show: false, phase: '' as '' | Phase, fined: false },
     // 管理员取消/改时间后的“转发到群”提示
@@ -223,6 +224,7 @@ Page({
       myTags:
         reg && reg.status === 'registered' ? (g.tags || []).map((tag) => ({ tag, on: (reg.tags || []).includes(tag) })) : [],
       myCheckinText: reg && reg.checkinAt ? fmtTimeSec(reg.checkinAt) : '',
+      myNote: reg ? reg.note || '' : '',
       notifyText: notifyText(d, t),
     })
     this.updateList()
@@ -546,19 +548,52 @@ Page({
     if (await run('setGameTags', { gameId: this.data.id, tags }, '保存中')) this.load()
   },
 
+  // ---------- 报名备注 ----------
+
+  onEditMyNote() {
+    const reg = this.data.d && this.data.d.me.reg
+    if (reg) this.editNote(reg.openid, reg.note || '', '')
+  },
+
+  async editNote(openid: string, current: string, name: string) {
+    const r = await wx.showModal({
+      title: name ? `${name} 的备注` : '报名备注',
+      content: current,
+      editable: true,
+      placeholderText: '如：6:20 到（最多 20 字，留空即删除）',
+    })
+    if (!r.confirm) return
+    const isMe = openid === this.data.d!.me.openid
+    const res = await run<{ note: string }>(
+      'setRegNote',
+      { gameId: this.data.id, note: r.content || '', target: isMe ? undefined : openid },
+      '保存中',
+    )
+    if (!res) return
+    const d = this.data.d!
+    const patch = (x: RegView): RegView => (x.openid === openid ? { ...x, note: res.note } : x)
+    this.render({
+      ...d,
+      registered: d.registered.map(patch),
+      waitlist: d.waitlist.map(patch),
+      me: { ...d.me, reg: d.me.reg ? patch(d.me.reg) : null },
+    })
+  },
+
   // ---------- 复制名单 ----------
 
   onCopyRoster() {
     const d = this.data.d
     if (!d) return
     const g = d.game
-    const withTags = (r: RegView) => r.name + ((r.tags || []).length ? ` [${(r.tags || []).join('][')}]` : '')
+    const withTags = (r: RegView) =>
+      r.name + ((r.tags || []).length ? ` [${(r.tags || []).join('][')}]` : '') + (r.note ? `（${r.note}）` : '')
     const lines = [g.title, `${g.local.start}–${g.local.end}`, `📍 ${g.venue.name}`, `已报名 ${d.registered.length}/${g.capacity}`]
     if (this.data.tagStats) lines.push(this.data.tagStats)
     this.data.registered.forEach((r, i) => lines.push(`${i + 1}. ${withTags(r)}`))
     if (this.data.waitlist.length) {
       lines.push('', '替补：')
-      this.data.waitlist.forEach((r, i) => lines.push(`${i + 1}. ${r.name}`))
+      this.data.waitlist.forEach((r, i) => lines.push(`${i + 1}. ${r.name}${r.note ? `（${r.note}）` : ''}`))
     }
     wx.setClipboardData({ data: lines.join('\n') })
   },
@@ -622,8 +657,15 @@ Page({
       const resolve = (op: string, extra: Record<string, string>) =>
         run('resolveFines', { clubId: d.game.clubId, fineIds: row.pendingFineIds, op, ...extra }, '处理中')
       items.push({
-        label: `豁免罚款（${row.pendingFineText}）`,
+        label: `处理罚款（${row.pendingFineText}）…`,
         run: async () => {
+          let pick: number
+          try {
+            pick = (await wx.showActionSheet({ itemList: ['豁免', '已付（Venmo）', '已付（现金）'] })).tapIndex
+          } catch (err) {
+            return null
+          }
+          if (pick > 0) return resolve('paid', { method: pick === 1 ? 'venmo' : 'cash' })
           const r = await wx.showModal({ title: `豁免 ${name} 的罚款`, content: '', editable: true, placeholderText: '原因（必填），如：家里有事' })
           const note = (r.content || '').trim()
           if (!r.confirm) return null
@@ -632,18 +674,6 @@ Page({
             return null
           }
           return resolve('waived', { note })
-        },
-      })
-      items.push({
-        label: '罚款已付…',
-        run: async () => {
-          const methods = ['venmo', 'cash']
-          try {
-            const m = await wx.showActionSheet({ itemList: ['Venmo', '现金'] })
-            return resolve('paid', { method: methods[m.tapIndex] })
-          } catch (err) {
-            return null
-          }
         },
       })
     }
@@ -723,6 +753,15 @@ Page({
         )
       },
     })
+    if (row && (status === 'registered' || status === 'waitlist')) {
+      items.push({
+        label: '备注…',
+        run: async () => {
+          await this.editNote(openid, row.note || '', name)
+          return null // 已即时更新界面
+        },
+      })
+    }
     items.push({
       label: '修改名字',
       run: async () => {

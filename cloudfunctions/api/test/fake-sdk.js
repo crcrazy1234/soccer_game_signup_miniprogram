@@ -118,7 +118,11 @@ const fakeSdk = {
   init() {},
   database: () => ({ collection: (n) => query(n), command }),
   getWXContext: () => ({ OPENID: currentOpenid }),
-  openapi: { subscribeMessage: { send: async (m) => sent.push(m) } },
+  openapi: {
+    subscribeMessage: { send: async (m) => sent.push(m) },
+    // 测试用：包含“违规”二字视为不通过
+    security: { msgSecCheck: async ({ content }) => ({ result: { suggest: content.includes('违规') ? 'risky' : 'pass' } }) },
+  },
   getTempFileURL: async ({ fileList }) => ({
     fileList: fileList.map((f) => ({ fileID: f.fileID, tempFileURL: `https://tmp.example/${f.fileID.slice(8)}` })),
   }),

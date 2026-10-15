@@ -36,6 +36,7 @@ const ACTIONS = {
   getCheckinCode: game.getCheckinCode,
   setAttendance: game.setAttendance,
   toggleTag: game.toggleTag,
+  setRegNote: game.setRegNote,
   setGameTags: game.setGameTags,
   fineNoForward: game.fineNoForward,
   subscribeChange: game.subscribeChange,

@@ -326,3 +326,43 @@ test('check-in can be turned off per game or by club default', async () => {
   delete fake.store.games.get(g3).checkinEnabled
   assert.strictEqual((await api('o', 'gameForm', { clubId, gameId: g3 })).form.checkinEnabled, true)
 })
+
+test('registration notes: self-written, admin-editable, content-checked, cleared on re-signup', async () => {
+  fake.reset()
+  const startAt = T.zonedToUtcMs('2026-10-04', '18:00', tz)
+  fake.setNow(startAt - 2 * 24 * 60 * MIN)
+  for (const id of ['o', 'a', 'b', 'c']) {
+    await api(id, 'login')
+    await api(id, 'updateProfile', { nickname: id.toUpperCase() })
+  }
+  const { clubId } = await api('o', 'createClub', { name: 'T' })
+  const { venueId } = await api('o', 'saveVenue', { clubId, venue: { name: 'V', ...VENUE } })
+  const { gameId } = await api('o', 'saveGame', { clubId, form: { date: '2026-10-04', time: '18:00', timezone: tz, venueId, capacity: 2 } })
+  await api('a', 'signup', { gameId, inviter: 'o' })
+  await api('b', 'signup', { gameId, inviter: 'o' })
+  await api('c', 'signup', { gameId, inviter: 'o' }) // 替补也能写
+
+  assert.deepStrictEqual(await api('a', 'setRegNote', { gameId, note: '  6:20   到 ' }), { note: '6:20 到' })
+  await api('c', 'setRegNote', { gameId, note: '能来就来' })
+  assert.match(await apiErr('a', 'setRegNote', { gameId, note: '这是一段非常非常非常非常非常长的备注超过二十个字' }), /最多 20/)
+  assert.match(await apiErr('a', 'setRegNote', { gameId, note: '违规内容' }), /不合适/)
+  assert.match(await apiErr('b', 'setRegNote', { gameId, note: 'x', target: 'a' }), /管理员/)
+  assert.match(await apiErr('o', 'setRegNote', { gameId, note: 'x' }), /只有报名/) // o 没报名
+
+  let g = await api('b', 'getGame', { gameId })
+  assert.deepStrictEqual(g.registered.map((r) => [r.name, r.note]), [['A', '6:20 到'], ['B', '']])
+  assert.strictEqual(g.waitlist[0].note, '能来就来')
+
+  // 管理员清空；比赛结束后也能改
+  await api('o', 'setRegNote', { gameId, note: '', target: 'a' })
+  fake.setNow(startAt + 5 * 60 * MIN)
+  await api('b', 'setRegNote', { gameId, note: '已到' })
+  g = await api('o', 'getGame', { gameId })
+  assert.deepStrictEqual(g.registered.map((r) => r.note), ['', '已到'])
+
+  // 取消后重新报名，备注清空
+  fake.setNow(startAt - 2 * 24 * 60 * MIN)
+  await api('c', 'cancelSignup', { gameId })
+  await api('c', 'signup', { gameId })
+  assert.strictEqual((await api('o', 'getGame', { gameId })).waitlist[0].note, '')
+})

@@ -80,6 +80,7 @@ export interface RegView {
   cancelPhase: '' | 'free' | 'warn' | 'penalty'
   cancelledFrom?: '' | 'registered' | 'waitlist'
   tags?: string[]
+  note?: string
   checkinAt: number
   checkinMethod: string
   attendance: '' | 'on_time' | 'late' | 'no_show'
