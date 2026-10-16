@@ -12,6 +12,7 @@ const {
   requireAdmin,
   isAdminRole,
   profilesFor,
+  mustGetClub,
 } = require('../lib/db')
 const rules = require('../lib/rules')
 const T = require('../lib/time')
@@ -96,7 +97,7 @@ function buildGameFields(club, venue, f) {
 
 async function saveGame({ openid, clubId, gameId, form }) {
   await requireAdmin(clubId, openid)
-  const club = await mustGet('clubs', clubId, '球队')
+  const club = await mustGetClub(clubId)
   const venue = await mustGet('venues', form.venueId, '场地')
   if (venue.clubId !== clubId) throw new UserError('场地不属于该球队')
   const fields = buildGameFields(club, venue, form)
@@ -252,8 +253,11 @@ async function unpaidCents(clubId, openid) {
 async function listGames({ openid, history }) {
   const members = await listAll(db.collection('members').where({ openid }))
   if (!members.length) return { games: [] }
-  const clubIds = members.map((m) => m.clubId)
-  const clubs = await listAll(db.collection('clubs').where({ _id: _.in(clubIds) }))
+  const clubs = (await listAll(db.collection('clubs').where({ _id: _.in(members.map((m) => m.clubId)) }))).filter(
+    (c) => !c.archived,
+  )
+  if (!clubs.length) return { games: [] }
+  const clubIds = clubs.map((c) => c._id)
   const clubNames = Object.fromEntries(clubs.map((c) => [c._id, c.name]))
   const now = Date.now()
   const query = history
@@ -296,7 +300,7 @@ async function getGame({ openid, gameId }) {
   let game = await mustGet('games', gameId, '比赛')
   if (await maybeSettle(game)) game = await mustGet('games', gameId, '比赛')
   if (await healRegisteredCount(game)) game = await mustGet('games', gameId, '比赛')
-  const club = await mustGet('clubs', game.clubId, '球队')
+  const club = await mustGetClub(game.clubId)
   const member = await getMember(game.clubId, openid)
   const isAdmin = !!member && isAdminRole(member.role)
 
@@ -387,6 +391,7 @@ async function getGame({ openid, gameId }) {
 
 async function signup({ openid, gameId, inviter, subscribed, subscribedChange, envVersion }) {
   const game = await mustGet('games', gameId, '比赛')
+  await mustGetClub(game.clubId)
   const now = Date.now()
   if (game.status !== 'active') throw new UserError('比赛已取消')
   if (now >= game.startAt) throw new UserError('比赛已开始，不能报名')

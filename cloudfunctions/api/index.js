@@ -15,6 +15,7 @@ const ACTIONS = {
   updateProfile: user.updateProfile,
 
   createClub: club.createClub,
+  archiveClub: club.archiveClub,
   getClub: club.getClub,
   updateClub: club.updateClub,
   setRole: club.setRole,

@@ -19,6 +19,7 @@ Page({
     clubId: '',
     ready: false,
     showProfile: false,
+    isOwner: false,
     name: '',
     venmo: '',
     fineDollars: '5',
@@ -51,6 +52,7 @@ Page({
     }
     this.setData({
       ready: true,
+      isOwner: c.me.isOwner,
       name: c.club.name,
       venmo: c.club.venmo,
       fineDollars: String(s.fineCents / 100),
@@ -61,6 +63,23 @@ Page({
       tzIndex,
       nums,
     })
+  },
+
+  async onArchiveClub() {
+    const r = await wx.showModal({
+      title: '删除球队',
+      content: '',
+      editable: true,
+      placeholderText: `输入“${this.data.name}”确认删除`,
+      confirmText: '删除',
+      confirmColor: '#d4380d',
+    })
+    if (!r.confirm) return
+    const ok = await run('archiveClub', { clubId: this.data.clubId, confirmName: (r.content || '').trim() }, '删除中')
+    if (!ok) return
+    await getSession(true)
+    wx.showToast({ title: '已删除', icon: 'success' })
+    setTimeout(() => wx.switchTab({ url: '/pages/home/home' }), 600)
   },
 
   profileResolve: null as null | ((ok: boolean) => void),

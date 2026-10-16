@@ -378,3 +378,31 @@ test('cancelling or rescheduling a game clears fines that no longer apply', asyn
   const waived = (await api('o', 'listFines', { clubId, status: 'waived' })).fines.find((f) => f.gameId === g2)
   assert.strictEqual(waived.note, '比赛取消：下雨')
 })
+
+test('owner can delete (archive) a club after confirming its name', async () => {
+  fake.reset()
+  const startAt = T.zonedToUtcMs('2026-10-04', '10:00', tz)
+  fake.setNow(startAt - 3 * 24 * 60 * MIN)
+  for (const id of ['o', 'a']) {
+    await api(id, 'login')
+    await api(id, 'updateProfile', { nickname: id.toUpperCase() })
+  }
+  const { clubId } = await api('o', 'createClub', { name: '测试队' })
+  const { clubId: keep } = await api('o', 'createClub', { name: '正式队' })
+  const { venueId } = await api('o', 'saveVenue', { clubId, venue: { name: 'V', ...VENUE } })
+  const { gameId } = await api('o', 'saveGame', { clubId, form: { date: '2026-10-04', time: '10:00', timezone: tz, venueId } })
+  await api('a', 'signup', { gameId, inviter: 'o' })
+  await api('o', 'setRole', { clubId, target: 'a', role: 'admin' })
+
+  assert.match(await apiErr('a', 'archiveClub', { clubId, confirmName: '测试队' }), /只有创建者/)
+  assert.match(await apiErr('o', 'archiveClub', { clubId, confirmName: '测试' }), /名称不一致/)
+  await api('o', 'archiveClub', { clubId, confirmName: '测试队' })
+
+  assert.deepStrictEqual((await api('o', 'login')).clubs.map((c) => c.clubName), ['正式队'])
+  assert.deepStrictEqual((await api('a', 'login')).clubs, [])
+  assert.strictEqual((await api('a', 'listGames')).games.length, 0)
+  assert.match(await apiErr('a', 'getGame', { gameId }), /球队已删除/)
+  assert.match(await apiErr('a', 'getClub', { clubId }), /球队已删除/)
+  assert.ok(fake.store.games.get(gameId)) // 数据保留
+  assert.ok((await api('o', 'getClub', { clubId: keep })).club)
+})

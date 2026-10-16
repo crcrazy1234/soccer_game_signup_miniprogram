@@ -11,6 +11,7 @@ const {
   requireAdmin,
   isAdminRole,
   fileUrls,
+  mustGetClub,
 } = require('../lib/db')
 const { DEFAULT_SETTINGS, cleanTags } = require('../lib/rules')
 const { isValidTimeZone } = require('../lib/time')
@@ -100,7 +101,7 @@ async function createClub({ openid, name, venmo }) {
 }
 
 async function getClub({ openid, clubId }) {
-  const club = await mustGet('clubs', clubId, '球队')
+  const club = await mustGetClub(clubId)
   const me = await requireMember(clubId, openid)
   const [members, venues] = await Promise.all([
     listAll(db.collection('members').where({ clubId }).orderBy('joinedAt', 'asc')),
@@ -270,7 +271,18 @@ async function deleteTemplate({ openid, clubId, templateId }) {
   return { templates }
 }
 
+// 删除球队（仅创建者，需输入球队名确认）：软删除，成员列表、比赛列表里都不再出现，数据保留
+async function archiveClub({ openid, clubId, confirmName }) {
+  const club = await mustGetClub(clubId)
+  const me = await requireMember(clubId, openid)
+  if (me.role !== 'owner') throw new UserError('只有创建者可以删除球队')
+  if (String(confirmName || '').trim() !== club.name) throw new UserError('球队名称不一致，未删除')
+  await db.collection('clubs').doc(clubId).update({ data: { archived: true, archivedBy: openid, archivedAt: Date.now() } })
+  return {}
+}
+
 module.exports = {
+  archiveClub,
   cleanSettings,
   saveTemplate,
   deleteTemplate,

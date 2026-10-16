@@ -28,6 +28,14 @@ async function listAll(query, limit = 1000) {
   return res.data
 }
 
+// 球队删除是软删除（archived），删除后当作不存在
+async function mustGetClub(clubId) {
+  const club = await getDoc('clubs', clubId)
+  if (!club) throw new UserError('球队不存在')
+  if (club.archived) throw new UserError('球队已删除')
+  return club
+}
+
 const memberId = (clubId, openid) => `${clubId}_${openid}`
 const regId = (gameId, openid) => `${gameId}_${openid}`
 
@@ -95,6 +103,7 @@ module.exports = {
   UserError,
   getDoc,
   mustGet,
+  mustGetClub,
   listAll,
   memberId,
   regId,

@@ -41,6 +41,10 @@
   </view>
 
   <button class="btn" bindtap="save">{{clubId ? '保存' : '创建球队'}}</button>
+  <view wx:if="{{clubId && isOwner}}" class="mt">
+    <button class="btn btn-danger" bindtap="onArchiveClub">删除球队</button>
+    <view class="hint" style="text-align:center;">删除后所有成员都看不到这个球队和它的比赛，只有创建者可以操作</view>
+  </view>
 </view>
 
 <profile-dialog show="{{showProfile}}" bind:done="onProfileDone" bind:cancel="onProfileCancel" />

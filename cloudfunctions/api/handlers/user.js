@@ -4,7 +4,7 @@ async function myClubs(openid) {
   const members = await listAll(db.collection('members').where({ openid }))
   if (!members.length) return []
   const clubs = await listAll(db.collection('clubs').where({ _id: _.in(members.map((m) => m.clubId)) }))
-  const byId = Object.fromEntries(clubs.map((c) => [c._id, c]))
+  const byId = Object.fromEntries(clubs.filter((c) => !c.archived).map((c) => [c._id, c]))
   return members
     .filter((m) => byId[m.clubId])
     .map((m) => ({ clubId: m.clubId, clubName: byId[m.clubId].name, role: m.role, name: m.name }))
