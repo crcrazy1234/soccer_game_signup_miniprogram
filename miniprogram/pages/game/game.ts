@@ -712,7 +712,8 @@ Page({
             }
           },
         })
-      } else {
+      } else if (now() >= d.me.checkinOpensAt && row && !row.checkinAt) {
+        // 签到窗口开放后、本人还没签到时才能代签到
         items.push({ label: '代签到（记为准时）', run: setAtt('on_time') })
       }
     }

@@ -366,3 +366,26 @@ test('registration notes: self-written, admin-editable, content-checked, cleared
   await api('c', 'signup', { gameId })
   assert.strictEqual((await api('o', 'getGame', { gameId })).waitlist[0].note, '')
 })
+
+test('admin proxy check-in only inside the check-in window', async () => {
+  fake.reset()
+  const startAt = T.zonedToUtcMs('2026-10-04', '10:00', tz)
+  fake.setNow(startAt - 2 * 24 * 60 * MIN)
+  for (const id of ['o', 'a']) {
+    await api(id, 'login')
+    await api(id, 'updateProfile', { nickname: id.toUpperCase() })
+  }
+  const { clubId } = await api('o', 'createClub', { name: 'T' })
+  const { venueId } = await api('o', 'saveVenue', { clubId, venue: { name: 'V', ...VENUE } })
+  const { gameId } = await api('o', 'saveGame', { clubId, form: { date: '2026-10-04', time: '10:00', timezone: tz, venueId } })
+  await api('a', 'signup', { gameId, inviter: 'o' })
+  // 三天前 / 开赛前 31 分钟：不行
+  assert.match(await apiErr('o', 'setAttendance', { gameId, target: 'a', attendance: 'on_time' }), /开放/)
+  fake.setNow(startAt - 31 * MIN)
+  assert.match(await apiErr('o', 'setAttendance', { gameId, target: 'a', attendance: 'on_time' }), /开放/)
+  // 开赛前 30 分钟：可以；再点一次提示已签到
+  fake.setNow(startAt - 30 * MIN)
+  await api('o', 'setAttendance', { gameId, target: 'a', attendance: 'on_time' })
+  assert.ok((await api('o', 'getGame', { gameId })).registered[0].checkinAt)
+  assert.match(await apiErr('o', 'setAttendance', { gameId, target: 'a', attendance: 'on_time' }), /已经签到/)
+})

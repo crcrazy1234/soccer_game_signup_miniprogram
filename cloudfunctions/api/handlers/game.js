@@ -699,6 +699,11 @@ async function setAttendance({ openid, gameId, target, attendance }) {
 
   if (!game.settledAt) {
     if (attendance !== 'on_time') throw new UserError('截止时间前只能代签到')
+    // 代签到和自己签到一样，只能在签到窗口内（开赛前 N 分钟起）
+    if (Date.now() < rules.checkinOpensAt(game)) {
+      throw new UserError(`签到将于开赛前 ${game.checkinOpenBeforeMin} 分钟开放，届时才能代签到`)
+    }
+    if (reg.checkinAt) throw new UserError('该成员已经签到了')
     await db
       .collection('registrations')
       .doc(reg._id)
