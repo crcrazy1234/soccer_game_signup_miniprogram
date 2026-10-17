@@ -1,6 +1,7 @@
 import { run } from '../../utils/api'
 import { getSession, ClubRef } from '../../utils/session'
 import { gameTimeText, ATTENDANCE_TEXT } from '../../utils/format'
+import { showChangelogOnce } from '../../utils/update'
 import { Game } from '../../utils/types'
 
 interface GameCard extends Game {
@@ -44,6 +45,8 @@ Page({
     try {
       const session = await getSession(force)
       this.setData({ clubs: session.clubs })
+      // 设置过昵称的算老用户，才弹“本次更新”
+      showChangelogOnce(!!session.nickname)
     } catch (e) {
       // 登录失败时仍显示空页面
     }

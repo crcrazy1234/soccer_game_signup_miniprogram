@@ -51,6 +51,12 @@ docs/PRD.md             产品需求
 模板 ID 同时填到 `miniprogram/config.ts` 和 `cloudfunctions/api/config.js`，并按模板的字段名修改对应函数。
 订阅是一次性的：用户报名时授权一次，只能收到一条；比赛页有“比赛改时间或取消时通知我”可再次开启。
 
+## 发版
+
+1. 修改 `miniprogram/changelog.ts` 里的 `APP_VERSION`（与上传时填写的版本号一致）和 `CHANGELOG`（老用户第一次打开新版本时会弹一次；留空则不弹）。
+2. 云函数有改动时先部署 `api`，确认触发器仍为“已启用”。
+3. 开发者工具「上传」→ 后台提交审核 → 通过后发布。用户打开时会提示“发现新版本，立即重启”。
+
 ## 上线前
 
 - 小程序后台 → 开发管理 → 接口设置，申请 `wx.getLocation` 和 `wx.chooseLocation`。
