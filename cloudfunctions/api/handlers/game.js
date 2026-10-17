@@ -56,7 +56,7 @@ function buildGameFields(club, venue, f) {
     ? T.zonedToUtcMs(f.cancelDeadline.date, f.cancelDeadline.time, tz)
     : T.deadlineBefore(startAt, tz, s.cancelDeadlineDaysBefore, s.cancelDeadlineTime)
   const signupOpensAt = f.signupOpens ? T.zonedToUtcMs(f.signupOpens.date, f.signupOpens.time, tz) : 0
-  if (cancelDeadlineAt > startAt) throw new UserError('缺席不转发罚款截止时间不能晚于开赛时间')
+  if (cancelDeadlineAt > startAt) throw new UserError('取消不转发罚款截止时间不能晚于开赛时间')
   if (signupOpensAt >= startAt) throw new UserError('报名开放时间需早于开赛时间')
   // 标题留空时自动生成，如“周日 · MTV Garfield”
   const customTitle = String(f.title || '').trim().slice(0, 30)
@@ -559,7 +559,7 @@ async function autoWaive(where, note) {
   return fines.length
 }
 
-// 改时间或缺席截止后，重新判断已取消的人：按新时间不该罚的，撤掉罚款（不会新增罚款）
+// 改时间或取消截止后，重新判断已取消的人：按新时间不该罚的，撤掉罚款（不会新增罚款）
 async function recheckCancellations(game) {
   const regs = await listAll(
     db.collection('registrations').where({ gameId: game._id, status: 'cancelled', cancelPhase: _.in(['warn', 'penalty']) }),
@@ -752,13 +752,13 @@ async function setAttendance({ openid, gameId, target, attendance }) {
   return {}
 }
 
-// 缺席截止后取消、但没有转发到群里：管理员手动罚款（系统无法检测是否转发）
+// 截止后取消、但没有转发到群里：管理员手动罚款（系统无法检测是否转发）
 async function fineNoForward({ openid, gameId, target }) {
   const game = await mustGet('games', gameId, '比赛')
   await requireAdmin(game.clubId, openid)
   const reg = await getDoc('registrations', regId(gameId, target))
   if (!reg || reg.status !== 'cancelled' || reg.cancelPhase !== 'warn') {
-    throw new UserError('只能对缺席截止后才取消的人使用')
+    throw new UserError('只能对截止后才取消报名的人使用')
   }
   if (game.fineCents <= 0) throw new UserError('本场罚款金额为 0')
   const fine = await createFine({

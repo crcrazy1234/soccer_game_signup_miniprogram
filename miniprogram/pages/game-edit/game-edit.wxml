@@ -91,7 +91,7 @@
       </picker>
     </block>
     <view class="field">
-      <text class="field-label">缺席不转发罚款截止</text>
+      <text class="field-label">取消不转发罚款截止</text>
       <view class="row">
         <picker mode="date" value="{{deadlineDate}}" end="{{date}}" data-key="deadlineDate" bindchange="onPick">
           <text>{{dt.daysBefore(deadlineDate, 0)}}</text>
@@ -101,7 +101,7 @@
         </picker>
       </view>
     </view>
-    <view class="hint">这个时间之后取消报名，必须转发到群里找人递补；开赛前 {{settings.penaltyWindowMin}} 分钟内取消视为缺席并罚款。默认比赛前 {{settings.cancelDeadlineDaysBefore}} 天 {{settings.cancelDeadlineTime}}，点日期或时间可修改。</view>
+    <view class="hint">这个时间之后取消报名，必须转发到群里找人递补；开赛前 {{settings.penaltyWindowMin}} 分钟内取消算临时取消并罚款。默认比赛前 {{settings.cancelDeadlineDaysBefore}} 天 {{settings.cancelDeadlineTime}}，点日期或时间可修改。</view>
     <view wx:if="{{checkinEnabled}}" class="field">
       <text class="field-label">迟到宽限（分钟）</text>
       <input class="field-value" type="number" value="{{lateGraceMin}}" data-key="lateGraceMin" bindinput="onInput" />

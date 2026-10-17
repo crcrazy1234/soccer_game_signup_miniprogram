@@ -14,7 +14,7 @@
     <view class="sub small mt">
       {{d.club.name}}<text wx:if="{{d.game.checkinEnabled !== false}}"> · 开赛 {{d.game.lateGraceMin}} 分钟后未签到记迟到，罚 {{fineText}}</text>
     </view>
-    <view class="sub small">缺席不转发罚款截止：{{d.game.local.cancelDeadline}}</view>
+    <view class="sub small">取消不转发罚款截止：{{d.game.local.cancelDeadline}}</view>
     <view wx:if="{{d.game.note}}" class="mt" style="white-space: pre-wrap;">{{d.game.note}}</view>
   </view>
 
@@ -122,7 +122,7 @@
       <view class="sub small">每分钟更新 · {{code.refreshText}}</view>
     </view>
     <view wx:if="{{notifyText}}" class="sub small mt">{{notifyText}}</view>
-    <view class="hint">点名单里的人可以：代签到、修正出勤、改标签、改备注、处理罚款、修改名字；「缺席」里截止后才取消的人可以罚“缺席未转发”</view>
+    <view class="hint">点名单里的人可以：代签到、修正出勤、改标签、改备注、处理罚款、修改名字；「已取消」里截止后才取消的人可以罚“取消未转发”</view>
   </view>
 
   <!-- 名单 -->
@@ -131,7 +131,7 @@
       <view class="row">
         <text class="{{tab === 'registered' ? 'bold' : 'sub'}}" data-tab="registered" bindtap="switchTab">已报名 {{registered.length}}</text>
         <text class="{{tab === 'waitlist' ? 'bold' : 'sub'}}" style="margin-left:32rpx;" data-tab="waitlist" bindtap="switchTab">替补 {{waitlist.length}}</text>
-        <text class="{{tab === 'cancelled' ? 'bold' : 'sub'}}" style="margin-left:32rpx;" data-tab="cancelled" bindtap="switchTab">缺席 {{cancelled.length}}</text>
+        <text class="{{tab === 'cancelled' ? 'bold' : 'sub'}}" style="margin-left:32rpx;" data-tab="cancelled" bindtap="switchTab">已取消 {{cancelled.length}}</text>
       </view>
       <text class="small">剩余 {{d.game.capacity - d.game.registeredCount > 0 ? d.game.capacity - d.game.registeredCount : 0}}/{{d.game.capacity}}</text>
     </view>
@@ -199,8 +199,8 @@
     <view class="dialog-title">{{shareDialog.phase === 'free' ? '已取消报名' : '请转发到群里'}}</view>
     <view class="dialog-body">
       <block wx:if="{{shareDialog.phase === 'free'}}">推荐转发到群里，让大家知道有空位。</block>
-      <block wx:else>已过缺席不转发罚款截止时间，<text class="bold">必须</text>转发到群里，方便没报上的人递补。</block>
-      <view wx:if="{{shareDialog.fined}}" class="bad mt">距开赛不足 1 小时取消，已记为缺席并产生罚款，管理员可视情况豁免。</view>
+      <block wx:else>已过取消不转发罚款截止时间，<text class="bold">必须</text>转发到群里，方便没报上的人递补。</block>
+      <view wx:if="{{shareDialog.fined}}" class="bad mt">距开赛不足 1 小时取消，已记为临时取消并产生罚款，管理员可视情况豁免。</view>
     </view>
     <button class="btn" open-type="share">转发到群</button>
     <view class="sub small mt" style="text-align:center;" bindtap="closeShareDialog">

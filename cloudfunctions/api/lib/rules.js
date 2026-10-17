@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS = {
   fineCents: 500,
   checkinRadiusM: 100,
   checkinOpenBeforeMin: 30,
-  penaltyWindowMin: 60, // 开赛前多少分钟内取消视作缺席
+  penaltyWindowMin: 60, // 开赛前多少分钟内取消算临时取消（罚款）
   cancelDeadlineDaysBefore: 1,
   cancelDeadlineTime: '21:00',
   defaultTags: [], // 新发起比赛时默认带上的标签
@@ -39,14 +39,14 @@ const FINE_REASONS = {
   late: '迟到',
   no_show: '未到',
   late_cancel: '临时取消',
-  no_forward: '缺席未转发',
+  no_forward: '取消未转发',
   manual: '其他',
 }
 
 // 取消报名处于哪个阶段：
-//   free    缺席截止前，推荐转发
-//   warn    缺席截止后，必须转发，不罚款
-//   penalty 开赛前 penaltyWindowMin 内，视作缺席，罚款
+//   free    截止前取消，推荐转发
+//   warn    截止后取消，必须转发，不罚款
+//   penalty 开赛前 penaltyWindowMin 内取消，算临时取消，罚款
 function cancelPhase(game, now) {
   if (now < game.cancelDeadlineAt) return 'free'
   if (now < game.startAt - game.penaltyWindowMin * MIN) return 'warn'

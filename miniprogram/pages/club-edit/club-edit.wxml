@@ -26,7 +26,7 @@
       <input class="field-value" type="number" value="{{nums[item.key]}}" data-key="nums.{{item.key}}" bindinput="onInput" />
     </view>
     <picker mode="time" value="{{cancelDeadlineTime}}" data-key="cancelDeadlineTime" bindchange="onPick">
-      <view class="field"><text class="field-label">缺席不转发罚款截止时刻</text><text class="field-value">{{cancelDeadlineTime}} ›</text></view>
+      <view class="field"><text class="field-label">取消不转发罚款截止时刻</text><text class="field-value">{{cancelDeadlineTime}} ›</text></view>
     </picker>
     <view class="field">
       <text class="field-label">默认开启到场签到</text>

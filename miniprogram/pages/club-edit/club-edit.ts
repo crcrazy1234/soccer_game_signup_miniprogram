@@ -11,7 +11,7 @@ const NUM_FIELDS = [
   { key: 'checkinRadiusM', label: '新场地签到范围', unit: '米' },
   { key: 'checkinOpenBeforeMin', label: '签到开放（开赛前）', unit: '分钟' },
   { key: 'penaltyWindowMin', label: '临时取消罚款（开赛前）', unit: '分钟' },
-  { key: 'cancelDeadlineDaysBefore', label: '缺席不转发罚款截止（比赛前）', unit: '天' },
+  { key: 'cancelDeadlineDaysBefore', label: '取消不转发罚款截止（比赛前）', unit: '天' },
 ]
 
 Page({

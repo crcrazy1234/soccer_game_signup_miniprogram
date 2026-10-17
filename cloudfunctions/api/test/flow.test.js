@@ -68,7 +68,7 @@ test('full game flow', async () => {
   assert.strictEqual(g.registered[0].isNew, true)
   assert.deepStrictEqual(g.registered.map((r) => r.isAdmin), [false, false])
 
-  // 缺席截止前取消：free，C 递补并收到通知
+  // 截止前取消：free，C 递补并收到通知
   assert.deepStrictEqual(await api('a', 'cancelSignup', { gameId }), { phase: 'free', fined: false })
   g = await api('owner', 'getGame', { gameId })
   assert.deepStrictEqual(g.registered.map((r) => r.name), ['B', 'C'])
@@ -95,11 +95,11 @@ test('full game flow', async () => {
   assert.deepStrictEqual(g.registered.map((r) => r.name), ['B', 'A']) // A 递补
 
   // C 没转发：管理员手动罚款；A 是截止前取消的，不能罚；非管理员不能罚
-  assert.match(await apiErr('owner', 'fineNoForward', { gameId, target: 'a' }), /缺席截止后/)
+  assert.match(await apiErr('owner', 'fineNoForward', { gameId, target: 'a' }), /截止后/)
   assert.match(await apiErr('b', 'fineNoForward', { gameId, target: 'c' }), /管理员/)
   const { fineId: nf } = await api('owner', 'fineNoForward', { gameId, target: 'c' })
   let cFines = (await api('c', 'listFines', { clubId })).fines
-  assert.deepStrictEqual(cFines.map((f) => f.reasonText), ['缺席未转发'])
+  assert.deepStrictEqual(cFines.map((f) => f.reasonText), ['取消未转发'])
   // 这里豁免掉，不影响后面 C 重新排队
   await api('owner', 'resolveFines', { clubId, fineIds: [nf], op: 'waived', note: '已在群里说过' })
 
@@ -244,7 +244,7 @@ test('scheduled signup opening and default cancel deadline', async () => {
   await api('o', 'saveGame', { clubId, gameId, form: { date: '2026-10-04', time: '10:00', timezone: tz, venueId, note: '改备注' } })
   fake.setNow(T.zonedToUtcMs('2026-10-01', '20:00', tz))
 
-  // 单场自定义缺席截止；晚于开赛时间会被拒绝
+  // 单场自定义取消截止；晚于开赛时间会被拒绝
   const { gameId: g2 } = await api('o', 'saveGame', {
     clubId,
     form: { date: '2026-10-11', time: '10:00', timezone: tz, venueId, cancelDeadline: { date: '2026-10-09', time: '20:00' } },
@@ -354,11 +354,11 @@ test('cancelling or rescheduling a game clears fines that no longer apply', asyn
   fake.setNow(startAt - 30 * MIN)
   assert.strictEqual((await api('p', 'cancelSignup', { gameId })).phase, 'penalty')
   const pending = async () => (await api('o', 'listFines', { clubId, status: 'pending' })).fines.map((f) => f.reasonText).sort()
-  assert.deepStrictEqual(await pending(), ['临时取消', '缺席未转发'])
+  assert.deepStrictEqual(await pending(), ['临时取消', '取消未转发'])
 
   // 改到 14:00：P 按新时间是提前 4.5 小时取消 → 撤销；Q 仍在截止后 → 保留
   await api('o', 'saveGame', { clubId, gameId, form: { ...form, time: '14:00' } })
-  assert.deepStrictEqual(await pending(), ['缺席未转发'])
+  assert.deepStrictEqual(await pending(), ['取消未转发'])
   const g = await api('o', 'getGame', { gameId })
   assert.strictEqual(g.cancelled.find((r) => r.name === 'P').cancelPhase, 'warn')
 

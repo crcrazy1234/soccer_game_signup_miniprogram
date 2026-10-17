@@ -342,8 +342,8 @@ Page({
       : phase === 'free'
         ? '确定取消报名？'
         : phase === 'warn'
-          ? `已过缺席不转发罚款截止时间（${g.local.cancelDeadline}）。取消后必须转发到群里，方便别人递补。`
-          : `距开赛不足 ${g.penaltyWindowMin} 分钟，取消将视为缺席，产生 ${money(g.fineCents)} 罚款（管理员可视情况豁免）。仍要取消？`
+          ? `已过取消不转发罚款截止时间（${g.local.cancelDeadline}）。取消后必须转发到群里，方便别人递补。`
+          : `距开赛不足 ${g.penaltyWindowMin} 分钟，取消算临时取消，产生 ${money(g.fineCents)} 罚款（管理员可视情况豁免）。仍要取消？`
     const ok = await wx.showModal({
       title: isWaitlist ? '退出替补' : '取消报名',
       content,
@@ -679,11 +679,11 @@ Page({
     }
     if (status === 'cancelled' && phase === 'warn' && d.game.fineCents > 0 && row && !row.fineText) {
       items.push({
-        label: `罚款：缺席未转发（${money(d.game.fineCents)}）`,
+        label: `罚款：取消未转发（${money(d.game.fineCents)}）`,
         run: async () => {
           const r = await wx.showModal({
-            title: '缺席未转发',
-            content: `确认 ${name} 缺席后没有转发到群里？将产生 ${money(d.game.fineCents)} 罚款，可在罚款管理里豁免。`,
+            title: '取消未转发',
+            content: `确认 ${name} 取消报名后没有转发到群里？将产生 ${money(d.game.fineCents)} 罚款，可在罚款管理里豁免。`,
           })
           if (!r.confirm) return null
           const ok = await run('fineNoForward', { gameId: this.data.id, target: openid }, '处理中')
@@ -802,7 +802,7 @@ Page({
     }
     let title = `${g.local.start} ${g.venue.name}，报名踢球`
     if (me && me.status === 'registered') title = `@所有人 “${who}” 参加该比赛，点击查看比赛详情`
-    if (me && me.status === 'cancelled') title = `@所有人 “${who}” 缺席该比赛，有空位可以递补`
+    if (me && me.status === 'cancelled') title = `@所有人 “${who}” 取消报名，有空位可以递补`
     return { title, path }
   },
 })
