@@ -21,6 +21,15 @@
     <view class="hint">付清前无法在该球队报名</view>
   </view>
 
+  <view wx:for="{{stats}}" wx:key="clubId" class="card">
+    <view class="card-title">{{stats.length > 1 ? item.clubName + ' · ' : ''}}我的记录</view>
+    <view class="small">⚽ {{item.attendanceText}}</view>
+    <block wx:if="{{item.finesEnabled}}">
+      <view class="small mt" data-id="{{item.clubId}}" bindtap="openFines">💰 {{item.finesText}} <text class="sub">›</text></view>
+      <view wx:if="{{item.moneyText}}" class="sub small">{{item.moneyText}}</view>
+    </block>
+  </view>
+
   <view class="card">
     <view class="card-title">我的球队</view>
     <view wx:for="{{s.clubs}}" wx:key="clubId" class="field" data-id="{{item.clubId}}" bindtap="openClub">

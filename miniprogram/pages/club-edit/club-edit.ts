@@ -26,6 +26,7 @@ Page({
     cancelDeadlineTime: '21:00',
     defaultTagsText: '',
     checkinEnabled: true,
+    finesEnabled: true,
     tzLabels: TIMEZONES.map((t) => t.label),
     tzIndex: 0,
     numFields: NUM_FIELDS,
@@ -59,6 +60,7 @@ Page({
       cancelDeadlineTime: s.cancelDeadlineTime,
       defaultTagsText: (s.defaultTags || []).join('，'),
       checkinEnabled: s.checkinEnabled !== false,
+      finesEnabled: s.finesEnabled !== false,
       tzLabels: TIMEZONES.map((t) => t.label),
       tzIndex,
       nums,
@@ -132,6 +134,7 @@ Page({
       cancelDeadlineTime: d.cancelDeadlineTime,
       defaultTags: d.defaultTagsText,
       checkinEnabled: d.checkinEnabled,
+      finesEnabled: d.finesEnabled,
     }
     for (const { key } of NUM_FIELDS) settings[key] = Number(d.nums[key])
     const ok = await run('updateClub', { clubId: d.clubId, name: d.name, venmo: d.venmo, settings }, '保存中')

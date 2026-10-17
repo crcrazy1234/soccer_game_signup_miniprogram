@@ -9,7 +9,7 @@
     <view wx:if="{{c.me.isAdmin}}" class="field" data-to="newGame" bindtap="go">
       <text class="bold">发起比赛</text><text class="sub">›</text>
     </view>
-    <view class="field" data-to="fines" bindtap="go">
+    <view wx:if="{{c.club.settings.finesEnabled !== false}}" class="field" data-to="fines" bindtap="go">
       <text>{{c.me.isAdmin ? '罚款管理' : '我的罚款'}}</text>
       <text class="sub"><text wx:if="{{c.pendingFines}}" class="tag tag-bad">{{c.pendingFines}} 笔待处理</text> ›</text>
     </view>

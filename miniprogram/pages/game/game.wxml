@@ -12,7 +12,7 @@
     <view class="sub small" wx:if="{{d.game.venue.address}}">{{d.game.venue.address}}</view>
     <view class="sub">⚽ {{formatStr}}</view>
     <view class="sub small mt">
-      {{d.club.name}}<text wx:if="{{d.game.checkinEnabled !== false}}"> · 开赛 {{d.game.lateGraceMin}} 分钟后未签到记迟到，罚 {{fineText}}</text>
+      {{d.club.name}}<text wx:if="{{d.game.checkinEnabled !== false}}"> · 开赛 {{d.game.lateGraceMin}} 分钟后未签到记迟到<text wx:if="{{d.game.fineCents > 0}}">，罚 {{fineText}}</text></text>
     </view>
     <view class="sub small">取消不转发罚款截止：{{d.game.local.cancelDeadline}}</view>
     <view wx:if="{{d.game.note}}" class="mt" style="white-space: pre-wrap;">{{d.game.note}}</view>

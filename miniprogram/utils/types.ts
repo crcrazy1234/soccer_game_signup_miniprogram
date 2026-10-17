@@ -23,6 +23,7 @@ export interface ClubSettings {
   cancelDeadlineTime: string
   defaultTags?: string[]
   checkinEnabled?: boolean
+  finesEnabled?: boolean
 }
 
 export interface Game {
@@ -128,7 +129,7 @@ export interface GameDetail {
   notifyStats: NotifyStats | null
   teams: TeamsView | null
   game: Game
-  club: { _id: string; name: string; venmo: string }
+  club: { _id: string; name: string; venmo: string; finesEnabled?: boolean }
   registered: RegView[]
   waitlist: RegView[]
   cancelled: RegView[]
@@ -233,4 +234,12 @@ export interface GameTemplate {
   lateGraceMin: number
   fineCents: number
   signupOpens: { daysBefore: number; time: string } | null
+}
+
+export interface MyClubStats {
+  clubId: string
+  clubName: string
+  finesEnabled: boolean
+  attendance: { played: number; onTime: number; late: number; noShow: number; cancelled: number; upcoming: number }
+  fines: { byReason: { reason: string; n: number }[]; totalCents: number; paidCents: number; pendingCents: number }
 }

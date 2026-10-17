@@ -43,6 +43,7 @@ function cleanSettings(input = {}) {
     s.cancelDeadlineTime = input.cancelDeadlineTime
   }
   if (input.checkinEnabled !== undefined) s.checkinEnabled = !!input.checkinEnabled
+  if (input.finesEnabled !== undefined) s.finesEnabled = !!input.finesEnabled
   if (input.defaultTags !== undefined) {
     try {
       s.defaultTags = cleanTags(input.defaultTags)
@@ -143,6 +144,13 @@ async function updateClub({ openid, clubId, name, venmo, settings }) {
   }
   if (venmo !== undefined) data.venmo = String(venmo).trim()
   await db.collection('clubs').doc(clubId).update({ data })
+  // 关闭罚款：还没结算完的比赛一起改成不罚款
+  if (data.settings.finesEnabled === false && club.settings.finesEnabled !== false) {
+    await db
+      .collection('games')
+      .where({ clubId, status: 'active', settleDone: _.neq(true) })
+      .update({ data: { fineCents: 0 } })
+  }
   return {}
 }
 

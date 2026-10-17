@@ -66,7 +66,7 @@ Page({
           return run('renameMember', { clubId, target: m.openid, name }, '保存中')
         },
       },
-      {
+      ...(c.club.settings.finesEnabled === false ? [] : [{
         label: '添加罚款',
         run: async () => {
           const reason = await wx.showModal({ title: `给 ${m.name} 添加罚款`, content: '', editable: true, placeholderText: '原因，如：穿非 turf 鞋伤人' })
@@ -77,7 +77,7 @@ Page({
           if (!amt.confirm || !(dollars > 0)) return null
           return run('addFine', { clubId, target: m.openid, amountCents: Math.round(dollars * 100), note }, '保存中')
         },
-      },
+      }]),
     ]
     if (c.me.isOwner && m.role !== 'owner') {
       const toAdmin = m.role !== 'admin'

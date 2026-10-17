@@ -18,6 +18,11 @@
       <view class="field"><text class="field-label">默认时区</text><text class="field-value small">{{tzLabels[tzIndex]}} ›</text></view>
     </picker>
     <view class="field">
+      <text class="field-label">启用罚款</text>
+      <switch checked="{{finesEnabled}}" data-key="finesEnabled" bindchange="onSwitch" color="#111" />
+    </view>
+    <view wx:if="{{!finesEnabled}}" class="hint">关闭后不产生任何罚款（迟到、未到、临时取消都不罚），也不会因未付罚款拦截报名；基金账本照常可用</view>
+    <view wx:if="{{finesEnabled}}" class="field">
       <text class="field-label">罚款金额（$）</text>
       <input class="field-value" type="digit" value="{{fineDollars}}" data-key="fineDollars" bindinput="onInput" />
     </view>

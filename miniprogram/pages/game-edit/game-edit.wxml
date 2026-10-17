@@ -106,7 +106,7 @@
       <text class="field-label">迟到宽限（分钟）</text>
       <input class="field-value" type="number" value="{{lateGraceMin}}" data-key="lateGraceMin" bindinput="onInput" />
     </view>
-    <view class="field">
+    <view wx:if="{{settings.finesEnabled !== false}}" class="field">
       <text class="field-label">罚款金额（$）</text>
       <input class="field-value" type="digit" value="{{fineDollars}}" data-key="fineDollars" bindinput="onInput" />
     </view>

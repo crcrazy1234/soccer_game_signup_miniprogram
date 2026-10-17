@@ -79,7 +79,7 @@ function buildGameFields(club, venue, f) {
     autoTeams: checkinOn && !!f.autoTeams,
     goalkeeper: checkinOn && !!f.autoTeams && !!f.goalkeeper,
     tags: tagsOrThrow(f.tags),
-    fineCents: intIn(f.fineCents ?? s.fineCents, 0, 100000, '罚款金额'),
+    fineCents: s.finesEnabled === false ? 0 : intIn(f.fineCents ?? s.fineCents, 0, 100000, '罚款金额'),
     cancelDeadlineAt,
     signupOpensAt,
     penaltyWindowMin: s.penaltyWindowMin,
@@ -373,7 +373,7 @@ async function getGame({ openid, gameId }) {
     teams: teams.teamsView(game, regs, profiles, openid),
     serverNow: now,
     game: publicGame(game),
-    club: { _id: club._id, name: club.name, venmo: club.venmo },
+    club: { _id: club._id, name: club.name, venmo: club.venmo, finesEnabled: club.settings.finesEnabled !== false },
     registered: pick('registered', 'spotAt'),
     waitlist: pick('waitlist', 'waitlistAt'),
     cancelled: pick('cancelled', 'cancelledAt'),
@@ -382,7 +382,7 @@ async function getGame({ openid, gameId }) {
       isMember: !!member,
       isAdmin,
       reg: mine ? view(mine) : null,
-      unpaidCents: member ? await unpaidCents(game.clubId, openid) : 0,
+      unpaidCents: member && club.settings.finesEnabled !== false ? await unpaidCents(game.clubId, openid) : 0,
       checkinOpensAt: rules.checkinOpensAt(game),
       openReminder: game.signupOpensAt > now ? await remind.hasOpenReminder(gameId, openid) : false,
     },
@@ -391,7 +391,8 @@ async function getGame({ openid, gameId }) {
 
 async function signup({ openid, gameId, inviter, subscribed, subscribedChange, envVersion }) {
   const game = await mustGet('games', gameId, '比赛')
-  await mustGetClub(game.clubId)
+  const club = await mustGetClub(game.clubId)
+  const finesOn = !club.settings || club.settings.finesEnabled !== false
   const now = Date.now()
   if (game.status !== 'active') throw new UserError('比赛已取消')
   if (now >= game.startAt) throw new UserError('比赛已开始，不能报名')
@@ -403,10 +404,9 @@ async function signup({ openid, gameId, inviter, subscribed, subscribedChange, e
   }
   await ensureMember(game.clubId, openid, inviter)
 
-  const owed = await unpaidCents(game.clubId, openid)
+  const owed = finesOn ? await unpaidCents(game.clubId, openid) : 0
   if (owed > 0) {
-    const club = await getDoc('clubs', game.clubId)
-    const venmo = club && club.venmo ? `Venmo ${club.venmo} 或` : ''
+    const venmo = club.venmo ? `Venmo ${club.venmo} 或` : ''
     throw new UserError(`你有未付罚款 $${(owed / 100).toFixed(2)}，请${venmo}现金支付给管理员，确认后即可报名`)
   }
 

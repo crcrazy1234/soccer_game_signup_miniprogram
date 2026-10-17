@@ -1,6 +1,7 @@
 import { run, call, toastError } from '../../utils/api'
 import { getSession, setSession, Session } from '../../utils/session'
 import { money } from '../../utils/format'
+import { MyClubStats } from '../../utils/types'
 
 interface PendingFine {
   _id: string
@@ -18,6 +19,7 @@ Page({
     s: null as Session | null,
     nickname: '',
     fines: [] as PendingFine[],
+    stats: [] as (MyClubStats & { attendanceText: string; finesText: string; moneyText: string })[],
   },
 
   onShow() {
@@ -32,8 +34,29 @@ Page({
       toastError(e)
       return
     }
-    const res = await run<{ fines: PendingFine[] }>('myPendingFines', {}, '')
+    const [res, st] = await Promise.all([
+      run<{ fines: PendingFine[] }>('myPendingFines', {}, ''),
+      run<{ clubs: MyClubStats[] }>('myStats', {}, ''),
+    ])
     if (res) this.setData({ fines: res.fines.map((f) => ({ ...f, amountText: money(f.amountCents) })) })
+    if (st) {
+      this.setData({
+        stats: st.clubs.map((c) => {
+          const a = c.attendance
+          const parts = [`已踢 ${a.played} 场`]
+          if (a.played) parts.push(`准时 ${a.onTime}`, `迟到 ${a.late}`, `未到 ${a.noShow}`)
+          if (a.cancelled) parts.push(`取消 ${a.cancelled}`)
+          if (a.upcoming) parts.push(`即将参加 ${a.upcoming}`)
+          const f = c.fines
+          return {
+            ...c,
+            attendanceText: parts.join(' · '),
+            finesText: f.byReason.length ? f.byReason.map((x) => `${x.reason} ${x.n} 次`).join(' · ') : '没有罚款',
+            moneyText: f.totalCents ? `累计 ${money(f.totalCents)}，已付 ${money(f.paidCents)}，待付 ${money(f.pendingCents)}` : '',
+          }
+        }),
+      })
+    }
   },
 
   async onChooseAvatar(e: WechatMiniprogram.CustomEvent<{ avatarUrl: string }>) {

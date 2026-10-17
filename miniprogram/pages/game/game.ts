@@ -343,7 +343,9 @@ Page({
         ? '确定取消报名？'
         : phase === 'warn'
           ? `已过取消不转发罚款截止时间（${g.local.cancelDeadline}）。取消后必须转发到群里，方便别人递补。`
-          : `距开赛不足 ${g.penaltyWindowMin} 分钟，取消算临时取消，产生 ${money(g.fineCents)} 罚款（管理员可视情况豁免）。仍要取消？`
+          : g.fineCents > 0
+            ? `距开赛不足 ${g.penaltyWindowMin} 分钟，取消算临时取消，产生 ${money(g.fineCents)} 罚款（管理员可视情况豁免）。仍要取消？`
+            : `距开赛不足 ${g.penaltyWindowMin} 分钟，取消后请务必转发到群里，方便别人递补。仍要取消？`
     const ok = await wx.showModal({
       title: isWaitlist ? '退出替补' : '取消报名',
       content,
@@ -734,7 +736,7 @@ Page({
         },
       })
     }
-    items.push({
+    if (d.club.finesEnabled !== false) items.push({
       label: '添加其他罚款（如穿钉鞋）',
       run: async () => {
         const r1 = await wx.showModal({ title: `罚款：${name}`, content: '', editable: true, placeholderText: '原因，如：穿钉鞋踩伤人' })

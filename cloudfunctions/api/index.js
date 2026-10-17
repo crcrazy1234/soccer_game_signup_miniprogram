@@ -9,10 +9,12 @@ const ledger = require('./handlers/ledger')
 const { settleDue } = require('./handlers/settle')
 const teams = require('./handlers/teams')
 const remind = require('./handlers/remind')
+const stats = require('./handlers/stats')
 
 const ACTIONS = {
   login: user.login,
   updateProfile: user.updateProfile,
+  myStats: stats.myStats,
 
   createClub: club.createClub,
   archiveClub: club.archiveClub,

@@ -389,3 +389,35 @@ test('admin proxy check-in only inside the check-in window', async () => {
   assert.ok((await api('o', 'getGame', { gameId })).registered[0].checkinAt)
   assert.match(await apiErr('o', 'setAttendance', { gameId, target: 'a', attendance: 'on_time' }), /已经签到/)
 })
+
+test('my stats and the club-level fines switch', async () => {
+  const { gameId, clubId, ids, checkin } = await setup({ capacity: 6, teamSize: 3, teamCount: 2, players: 4 })
+  const startAt = T.zonedToUtcMs('2026-10-04', '10:00', tz)
+  const [o, a, b, c] = ids
+  await checkin(o) // 准时
+  fake.setNow(startAt + 15 * MIN)
+  await api(a, 'checkin', { gameId, ...VENUE }) // 迟到（结算前签到也算迟到）
+  await api(o, 'getGame', { gameId }) // 结算：b、c 未到
+  await api(o, 'addFine', { clubId, target: a, amountCents: 300, note: '穿钉鞋', gameId })
+  const fines = (await api(o, 'listFines', { clubId, status: 'pending' })).fines.filter((f) => f.openid === a)
+  await api(o, 'resolveFines', { clubId, fineIds: [fines.find((f) => f.reason === 'late')._id], op: 'paid', method: 'cash' })
+  fake.setNow(startAt + 3 * 60 * MIN) // 比赛结束
+
+  let st = (await api(a, 'myStats')).clubs[0]
+  assert.deepStrictEqual(st.attendance, { played: 1, onTime: 0, late: 1, noShow: 0, cancelled: 0, upcoming: 0 })
+  assert.deepStrictEqual(st.fines.byReason.map((x) => [x.reason, x.n]).sort(), [['穿钉鞋', 1], ['迟到', 1]])
+  assert.deepStrictEqual([st.fines.totalCents, st.fines.paidCents, st.fines.pendingCents], [800, 500, 300])
+  st = (await api(o, 'myStats')).clubs[0]
+  assert.strictEqual(st.attendance.onTime, 1)
+
+  // 关闭罚款：不再拦截报名、不能加罚款、新比赛不罚款
+  await api(o, 'updateClub', { clubId, settings: { finesEnabled: false } })
+  const venueId = fake.store.games.get(gameId).venue.id
+  const { gameId: g2 } = await api(o, 'saveGame', { clubId, form: { date: '2026-10-11', time: '10:00', timezone: tz, venueId, fineCents: 500 } })
+  assert.strictEqual((await api(o, 'getGame', { gameId: g2 })).game.fineCents, 0)
+  assert.deepStrictEqual(await api(b, 'signup', { gameId: g2 }), { status: 'registered' }) // b 有未付的未到罚款
+  assert.strictEqual((await api(b, 'getGame', { gameId: g2 })).me.unpaidCents, 0)
+  assert.match(await apiErr(o, 'addFine', { clubId, target: b, amountCents: 100, note: 'x' }), /没有启用罚款/)
+  assert.strictEqual((await api(b, 'myStats')).clubs[0].finesEnabled, false)
+  assert.deepStrictEqual((await api(b, 'myPendingFines')).fines, []) // 不再提示待付
+})

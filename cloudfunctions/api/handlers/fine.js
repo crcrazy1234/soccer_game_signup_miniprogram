@@ -34,9 +34,12 @@ async function myPendingFines({ openid }) {
   const fines = await listAll(db.collection('fines').where({ openid, status: 'pending' }).orderBy('createdAt', 'desc'))
   const clubIds = [...new Set(fines.map((f) => f.clubId))]
   const clubs = clubIds.length ? await listAll(db.collection('clubs').where({ _id: _.in(clubIds) })) : []
-  const byId = Object.fromEntries(clubs.map((c) => [c._id, c]))
+  // 已删除或关闭罚款的球队不再提示待付
+  const byId = Object.fromEntries(
+    clubs.filter((c) => !c.archived && (!c.settings || c.settings.finesEnabled !== false)).map((c) => [c._id, c]),
+  )
   return {
-    fines: fines.map((f) => ({
+    fines: fines.filter((f) => byId[f.clubId]).map((f) => ({
       _id: f._id,
       clubId: f.clubId,
       clubName: (byId[f.clubId] || {}).name || '',
@@ -115,6 +118,8 @@ async function resolveFines({ openid, clubId, fineIds, op, method, note }) {
 // gameId 可选：从比赛页添加时关联到那场比赛
 async function addFine({ openid, clubId, target, amountCents, note, gameId }) {
   await requireAdmin(clubId, openid)
+  const club = await getDoc('clubs', clubId)
+  if (club && club.settings && club.settings.finesEnabled === false) throw new UserError('本球队没有启用罚款')
   await requireMember(clubId, target)
   if (gameId) {
     const game = await getDoc('games', gameId)
