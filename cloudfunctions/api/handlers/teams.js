@@ -4,7 +4,7 @@
 //   - 只有两队时，签满 2×每队人数 才随机分成两队。
 //   - 管理员可随时“立即分队”：把已签到的人平均随机分到所有队。
 //   - 管理员可“重新随机”：只重抽首批分队的人，后到的人不动。
-//   - 守门员顺序：首批随机；后到的人排在本队最后。
+//   - 守门员顺序：首批随机；后到的队（如 C）在分队时预先随机好号码，依次发给到场的人；超员的人排在本队最后。
 const crypto = require('crypto')
 const { db, _, UserError, getDoc, mustGet, listAll, regId, requireAdmin } = require('../lib/db')
 
@@ -57,7 +57,10 @@ async function assignLate(game, reg) {
   const size = (t) => members.filter((r) => r.team === t).length
   // 首批之外的队（如 C）人最少，所以会先被填满
   const team = names.reduce((best, t) => (size(t) < size(best) ? t : best), names[0])
-  const gk = Math.max(0, ...members.filter((r) => r.team === team).map((r) => r.gk || 0)) + 1
+  // 分队时为后到的队（如 C）预先随机好 1..每队人数 的守门员号，依次发放；发完或其他队超员时排最后
+  const used = members.filter((r) => r.team === team).map((r) => r.gk || 0)
+  const slots = (game.gkSlots || {})[team] || []
+  const gk = slots.find((n) => !used.includes(n)) || Math.max(0, ...used) + 1
   await db.collection('registrations').doc(reg._id).update({ data: { team, gk, teamInitial: false } })
   return team
 }
@@ -71,14 +74,19 @@ async function formTeams(game, manual) {
   if (!regs.length) throw new UserError('还没有人签到')
   if (regs.length < firstCount) return false
 
+  // 首批之外的队（如 8v8v8 的 C 队）：现在就随机好守门员顺序，后到的人依次领号
+  const gkSlots = {}
+  for (const t of TEAM_NAMES.slice(firstTeams, game.teamCount)) {
+    gkSlots[t] = shuffle(Array.from({ length: game.teamSize }, (_, i) => i + 1))
+  }
   const claim = await db
     .collection('games')
     .where({ _id: game._id, teamsFormedAt: 0 })
-    .update({ data: { teamsFormedAt: Date.now(), teamsFirstCount: firstTeams } })
+    .update({ data: { teamsFormedAt: Date.now(), teamsFirstCount: firstTeams, gkSlots } })
   if (claim.stats.updated !== 1) return false
 
   await saveAssignments(deal(shuffle(regs.slice(0, firstCount)), firstTeams), true)
-  const formed = { ...game, teamsFormedAt: Date.now(), teamsFirstCount: firstTeams }
+  const formed = { ...game, teamsFormedAt: Date.now(), teamsFirstCount: firstTeams, gkSlots }
   for (const reg of regs.slice(firstCount)) await assignLate(formed, reg)
   return true
 }

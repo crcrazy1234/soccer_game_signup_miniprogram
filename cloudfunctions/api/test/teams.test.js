@@ -68,8 +68,12 @@ test('8v8v8: first 16 random into A/B, next 8 into C, overflow to smallest team'
   for (const id of ids.slice(16, 24)) await checkin(id)
   t = (await api('o', 'getGame', { gameId })).teams
   assert.deepStrictEqual(sizes(t), [8, 8, 8])
-  assert.deepStrictEqual(t.teams[2].members.map((m) => m.openid), ids.slice(16, 24)) // 按签到顺序
-  assert.deepStrictEqual(gks(t.teams[2]), [1, 2, 3, 4, 5, 6, 7, 8])
+  assert.deepStrictEqual(t.teams[2].members.map((m) => m.openid).sort(), ids.slice(16, 24).sort())
+  assert.deepStrictEqual(gks(t.teams[2]), [1, 2, 3, 4, 5, 6, 7, 8]) // 按号码排序后是完整的 1..8
+  // C 队号码是分队时预先随机的，按到场顺序依次发放
+  const slots = fake.store.games.get(gameId).gkSlots.C
+  const byArrival = ids.slice(16, 24).map((id) => t.teams[2].members.find((m) => m.openid === id).gk)
+  assert.deepStrictEqual(byArrival, slots)
 
   await checkin(ids[24]) // 超员：都一样多 → A
   await checkin(ids[25]) // → B
