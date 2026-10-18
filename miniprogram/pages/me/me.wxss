@@ -1,2 +1,4 @@
 .avatar-btn { padding: 0; margin: 0; width: 120rpx; height: 120rpx; border-radius: 50%; background: none; line-height: 1; }
 .avatar-btn::after { border: none; }
+.feedback-btn { display: flex; justify-content: space-between; align-items: center; padding: 0; margin: 0; background: none; font-size: 30rpx; line-height: 1.6; text-align: left; color: inherit; }
+.feedback-btn::after { border: none; }

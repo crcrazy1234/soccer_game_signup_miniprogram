@@ -38,4 +38,10 @@
     </view>
     <view wx:if="{{!s.clubs.length}}" class="empty small">还没有加入球队</view>
   </view>
+  <view class="card">
+    <button class="feedback-btn" open-type="feedback">
+      <text>💬 意见反馈</text>
+      <text class="sub small">遇到问题或有建议？告诉我们 ›</text>
+    </button>
+  </view>
 </view>
